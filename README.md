@@ -1,36 +1,61 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## Tiny URL Dashboard
 
-## Getting Started
+A polished bit.ly style application built with **Next.js App Router** and **Neon Postgres**. Shorten links, track click stats, and manage campaigns from a single dashboard.
 
-First, run the development server:
+## Quick start
+
+1. Duplicate `.env.example` → `.env.local` and set your Neon connection string:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+DATABASE_URL="postgresql://..."
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Install dependencies & run the dev server:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm install
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+3. Visit `http://localhost:3000`
 
-## Learn More
+## Features
 
-To learn more about Next.js, take a look at the following resources:
+- **Dashboard (`/`)**
+  - Create short links with optional custom codes (`[A-Za-z0-9]{6,8}`)
+  - Inline validation, loading & success states
+  - Filterable table with copy + delete actions
+- **Stats (`/code/:code`)** – detail view for a single link
+- **Redirect (`/:code`)** – 302 redirect + click tracking
+- **Healthcheck (`/healthz`)** – JSON uptime + version info
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## API surface
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Method | Path             | Description                     |
+| ------ | ---------------- | ------------------------------- |
+| GET    | `/api/links`     | List all active links           |
+| POST   | `/api/links`     | Create a new short link         |
+| GET    | `/api/links/:code` | Fetch stats for a single link |
+| DELETE | `/api/links/:code` | Delete a short link           |
 
-## Deploy on Vercel
+### Model
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```sql
+CREATE TABLE IF NOT EXISTS links (
+  code TEXT PRIMARY KEY,
+  target_url TEXT NOT NULL,
+  click_count INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  last_clicked_at TIMESTAMPTZ,
+  deleted_at TIMESTAMPTZ
+);
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Deployment
+
+The app is production ready on any Next.js host (Vercel, Netlify, Render, etc.). Ensure `DATABASE_URL` is set and run:
+
+```bash
+npm run build
+npm start
+```
