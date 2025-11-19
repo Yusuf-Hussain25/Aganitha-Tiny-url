@@ -1,14 +1,12 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getLink, incrementClickCount } from "@/lib/links";
 
-type Params = {
-  params: {
-    code: string;
-  };
-};
-
-export async function GET(_: Request, { params }: Params) {
-  const link = await getLink(params.code);
+export async function GET(
+  _request: NextRequest,
+  context: { params: Promise<{ code: string }> },
+) {
+  const { code } = await context.params;
+  const link = await getLink(code);
   if (!link) {
     return NextResponse.json(
       { error: "Link not found" },
@@ -16,7 +14,7 @@ export async function GET(_: Request, { params }: Params) {
     );
   }
 
-  await incrementClickCount(params.code);
+  await incrementClickCount(code);
 
   return NextResponse.redirect(link.targetUrl, { status: 302 });
 }
