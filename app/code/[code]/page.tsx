@@ -18,8 +18,9 @@ export default async function CodeStatsPage({ params }: Params) {
     notFound();
   }
 
-  const host = headers().get("host") ?? "localhost:3000";
-  const protocol = headers().get("x-forwarded-proto") ?? "http";
+  const headerList = await headers();
+  const host = headerList.get("host") ?? "localhost:3000";
+  const protocol = headerList.get("x-forwarded-proto") ?? "http";
   const shortUrl = `${protocol}://${host}/${link.code}`;
 
   return (

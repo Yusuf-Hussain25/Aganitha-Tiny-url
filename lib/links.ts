@@ -1,6 +1,6 @@
-import type { SQLQueryResultRow } from "@neondatabase/serverless";
+import type { QueryResultRow } from "@neondatabase/serverless";
 import { randomBytes } from "node:crypto";
-import { type PostgresError, getDb } from "./db";
+import { getDb } from "./db";
 import { CODE_REGEX } from "./validation";
 
 export class DuplicateCodeError extends Error {
@@ -32,7 +32,7 @@ export type LinkRecord = {
   lastClickedAt: string | null;
 };
 
-type LinkRow = SQLQueryResultRow & {
+type LinkRow = QueryResultRow & {
   code: string;
   target_url: string;
   click_count: number;
@@ -68,24 +68,24 @@ export function normalizeUrl(rawUrl: string): string {
 
 export async function listLinks(): Promise<LinkRecord[]> {
   const db = await getDb();
-  const rows = await db<LinkRow[]>`
+  const rows = (await db`
     SELECT code, target_url, click_count, created_at, last_clicked_at
     FROM links
     WHERE deleted_at IS NULL
     ORDER BY created_at DESC
-  `;
+  `) as LinkRow[];
 
   return rows.map(mapRow);
 }
 
 export async function getLink(code: string): Promise<LinkRecord | null> {
   const db = await getDb();
-  const rows = await db<LinkRow[]>`
+  const rows = (await db`
     SELECT code, target_url, click_count, created_at, last_clicked_at
     FROM links
     WHERE code = ${code} AND deleted_at IS NULL
     LIMIT 1
-  `;
+  `) as LinkRow[];
   const row = rows.at(0);
   return row ? mapRow(row) : null;
 }
@@ -103,11 +103,11 @@ export async function createLink(input: {
   const db = await getDb();
 
   try {
-    const rows = await db<LinkRow[]>`
+    const rows = (await db`
       INSERT INTO links (code, target_url)
       VALUES (${code}, ${sanitizedUrl})
       RETURNING code, target_url, click_count, created_at, last_clicked_at
-    `;
+    `) as LinkRow[];
     return mapRow(rows[0]);
   } catch (error) {
     if (isUniqueViolation(error)) {
@@ -119,11 +119,11 @@ export async function createLink(input: {
 
 export async function deleteLink(code: string): Promise<boolean> {
   const db = await getDb();
-  const rows = await db<{ code: string }[]>`
+  const rows = (await db`
     DELETE FROM links
     WHERE code = ${code}
     RETURNING code
-  `;
+  `) as { code: string }[];
 
   return rows.length > 0;
 }
@@ -167,12 +167,12 @@ function randomCode(size: number): string {
   return result;
 }
 
-function isUniqueViolation(error: unknown): error is PostgresError {
+function isUniqueViolation(error: unknown): error is { code: string } {
   return (
     typeof error === "object" &&
     error !== null &&
     "code" in error &&
-    (error as PostgresError).code === "23505"
+    (error as { code?: string }).code === "23505"
   );
 }
 

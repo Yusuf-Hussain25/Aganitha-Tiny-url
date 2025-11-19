@@ -1,4 +1,4 @@
-import { neon, neonConfig, PostgresError } from "@neondatabase/serverless";
+import { neon, neonConfig } from "@neondatabase/serverless";
 
 const connectionString =
   process.env.DATABASE_URL ?? process.env.DB_URL ?? undefined;
@@ -32,6 +32,4 @@ export async function getDb() {
 
   return sql;
 }
-
-export type { PostgresError };
 
